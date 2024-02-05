@@ -33,14 +33,20 @@ func ErrorHandler(handler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		as := models.UserError(0)
 
-		if !errors.As(err, &as) {
-			handler(err, c)
-		}
-
-		if as != 0 {
-			c.JSON(http.StatusBadRequest, echo.Map{
-				"message": "invalid user data",
-			})
+		if errors.As(err, &as) {
+			switch err {
+			case models.UserAlreadyExists:
+				c.Redirect(http.StatusPermanentRedirect, "https://www.google.com/")
+			case models.MissingUserID,
+				models.MissingUserName,
+				models.MissingUserEmail,
+				models.MissingUserPicture:
+				c.JSON(http.StatusBadRequest, echo.Map{
+					"message": "invalid user data",
+				})
+			default:
+				handler(err, c)
+			}
 		}
 	}
 }

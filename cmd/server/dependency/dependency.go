@@ -7,7 +7,9 @@ import (
 	"github.com/erik-sostenes/auth-api/internal/business"
 	gh "github.com/erik-sostenes/auth-api/internal/handlers"
 	"github.com/erik-sostenes/auth-api/internal/handlers/api"
+	"github.com/erik-sostenes/auth-api/internal/models"
 	"github.com/erik-sostenes/auth-api/internal/repository"
+	"github.com/erik-sostenes/auth-api/internal/repository/persistence"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/oauth2"
@@ -24,9 +26,12 @@ func Injector(e *echo.Echo) (err error) {
 	pageDrawer := repository.NewPageDrawer()
 	pageProvider := business.NewPageProvider(oauth, pageDrawer)
 
+	set := persistence.NewSet[string, *models.User]()
+
 	codeExchanger := repository.NewCodeExchanger(oauth)
 	userInfoAsker := repository.NewUserInfoAsker()
-	exchanger := business.NewExchanger(codeExchanger, userInfoAsker)
+	userSaver := persistence.NewUserSaver(&set)
+	exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker)
 
 	googleHandler := gh.NewGoogleOAuthHandler(pageProvider, exchanger)
 	gh.GoogleRoutes(group, googleHandler)

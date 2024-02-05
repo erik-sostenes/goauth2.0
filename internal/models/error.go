@@ -11,6 +11,7 @@ const (
 	MissingUserName
 	MissingUserEmail
 	MissingUserPicture
+	UserAlreadyExists
 )
 
 type UserError uint16

@@ -2,9 +2,9 @@ package business
 
 import (
 	"context"
-	"log"
 
 	"github.com/erik-sostenes/auth-api/internal/repository"
+	"github.com/erik-sostenes/auth-api/internal/repository/persistence"
 )
 
 type Exchanger interface {
@@ -13,12 +13,18 @@ type Exchanger interface {
 
 type exchanger struct {
 	exchanger repository.CodeExchanger
+	saver     persistence.UserSaver
 	asker     repository.UserInfoAsker
 }
 
-func NewExchanger(codeExchanger repository.CodeExchanger, asker repository.UserInfoAsker) Exchanger {
+func NewExchanger(
+	codeExchanger repository.CodeExchanger,
+	saver persistence.UserSaver,
+	asker repository.UserInfoAsker,
+) Exchanger {
 	return &exchanger{
 		exchanger: codeExchanger,
+		saver:     saver,
 		asker:     asker,
 	}
 }
@@ -34,6 +40,10 @@ func (e *exchanger) Exchange(ctx context.Context, code string) (err error) {
 		return
 	}
 
+	if err = e.saver.Save(ctx, &user); err != nil {
+		return
+	}
+
 	// TODO: create user if it does not exist and generate JWT
 	//
 	// payload JWT
@@ -43,8 +53,6 @@ func (e *exchanger) Exchange(ctx context.Context, code string) (err error) {
 	// 	"iss": "crumbs",
 	//  "exp": 24hrs
 	// }
-
-	log.Println(user)
 
 	return
 }

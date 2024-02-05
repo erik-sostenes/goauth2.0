@@ -9,7 +9,7 @@ import (
 
 const (
 	viewsDir  = "templates/*"
-	extension = "*.html"
+	extension = "*.gohtml"
 )
 
 type PageDrawer[T TemplateProvider] interface {

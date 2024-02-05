@@ -57,9 +57,9 @@ func (g *googleOAuthHandler) Callback(c echo.Context) error {
 	ctx := c.Request().Context()
 	state := c.QueryParam(cookieName)
 
-	cookie, apiErr := api.ReadCookie(c, cookieName)
-	if apiErr != nil {
-		return echo.NewHTTPError(apiErr.Status(), apiErr.Error())
+	cookie, apierr := api.ReadCookie(c, cookieName)
+	if apierr != nil {
+		return echo.NewHTTPError(apierr.Status(), apierr.Error())
 	}
 
 	value, err := base64.URLEncoding.DecodeString(cookie.Value)
@@ -77,6 +77,6 @@ func (g *googleOAuthHandler) Callback(c echo.Context) error {
 		return err
 	}
 	// TODO: redirect url
-	url := ""
-	return c.Redirect(http.StatusTemporaryRedirect, url)
+	url := "https://www.google.com/"
+	return c.Redirect(http.StatusPermanentRedirect, url)
 }
