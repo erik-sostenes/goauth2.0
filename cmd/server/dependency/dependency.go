@@ -17,7 +17,8 @@ import (
 )
 
 func Injector(e *echo.Echo) (err error) {
-	group := e.Group("/api/v1/crumbs/auth")
+	privateKey := os.Getenv("PRIVATE_KEY")
+	group := e.Group("/api/v1/goauth/auth")
 
 	e.HTTPErrorHandler = api.ErrorHandler(e.DefaultHTTPErrorHandler)
 
@@ -31,7 +32,8 @@ func Injector(e *echo.Echo) (err error) {
 	codeExchanger := repository.NewCodeExchanger(oauth)
 	userInfoAsker := repository.NewUserInfoAsker()
 	userSaver := persistence.NewUserSaver(&set)
-	exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker)
+	generatorToken := business.NewTokenGenerator(privateKey)
+	exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, generatorToken)
 
 	googleHandler := gh.NewGoogleOAuthHandler(pageProvider, exchanger)
 	gh.GoogleRoutes(group, googleHandler)

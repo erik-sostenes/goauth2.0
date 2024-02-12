@@ -24,7 +24,7 @@ func NewUserSaver(set *Set[string, *models.User]) UserSaver {
 
 func (u *userSaver) Save(ctx context.Context, user *models.User) error {
 	if exists := u.Set.Exist(user.ID()); exists {
-		return fmt.Errorf("%w, %s", models.UserAlreadyExists, "the user with id"+user.ID()+"already exists")
+		return fmt.Errorf("%w: user with id '%s' already exists", models.DuplicateUser, user.ID())
 	}
 
 	u.Set.Add(user.ID(), user)

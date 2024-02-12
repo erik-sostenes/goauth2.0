@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 	"net/http"
+	"net/url"
 
 	"github.com/erik-sostenes/auth-api/internal/business"
 	"github.com/erik-sostenes/auth-api/internal/handlers/api"
@@ -49,7 +50,6 @@ func (g *googleOAuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	// TODO: display page or redirect if user is logged in
 	return c.HTML(http.StatusOK, page.String())
 }
 
@@ -57,7 +57,7 @@ func (g *googleOAuthHandler) Callback(c echo.Context) error {
 	ctx := c.Request().Context()
 	state := c.QueryParam(cookieName)
 
-	cookie, apierr := api.ReadCookie(c, cookieName)
+	cookie, apierr := api.GetCookie(c, cookieName)
 	if apierr != nil {
 		return echo.NewHTTPError(apierr.Status(), apierr.Error())
 	}
@@ -72,11 +72,22 @@ func (g *googleOAuthHandler) Callback(c echo.Context) error {
 	}
 
 	code := c.QueryParam("code")
-	err = g.exchanger.Exchange(ctx, code)
+	token, err := g.exchanger.Exchange(ctx, code)
 	if err != nil {
 		return err
 	}
+
 	// TODO: redirect url
-	url := "https://www.google.com/"
-	return c.Redirect(http.StatusPermanentRedirect, url)
+	const redirectUrl = "https://www.google.com/"
+	path, err := url.Parse(redirectUrl)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	params := url.Values{}
+	params.Set("params:Authorization:Bearer", token)
+
+	path.RawQuery = params.Encode()
+
+	return c.Redirect(http.StatusPermanentRedirect, path.String())
 }

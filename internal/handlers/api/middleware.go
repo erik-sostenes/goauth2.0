@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/erik-sostenes/auth-api/internal/models"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -33,17 +32,25 @@ func ErrorHandler(handler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		as := models.UserError(0)
 
+		if !errors.As(err, &as) {
+			handler(err, c)
+			return
+		}
+
+		message := echo.Map{
+			"code":    as.Error(),
+			"message": err.Error(),
+		}
+
 		if errors.As(err, &as) {
-			switch err {
-			case models.UserAlreadyExists:
-				c.Redirect(http.StatusPermanentRedirect, "https://www.google.com/")
+			switch as {
+			case models.DuplicateUser:
+				_ = c.JSON(http.StatusBadRequest, message)
 			case models.MissingUserID,
 				models.MissingUserName,
 				models.MissingUserEmail,
 				models.MissingUserPicture:
-				c.JSON(http.StatusBadRequest, echo.Map{
-					"message": "invalid user data",
-				})
+				_ = c.JSON(http.StatusBadRequest, message)
 			default:
 				handler(err, c)
 			}

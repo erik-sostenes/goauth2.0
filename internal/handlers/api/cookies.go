@@ -22,7 +22,7 @@ func SetCookie(c echo.Context, cookie *http.Cookie) error {
 	return nil
 }
 
-func ReadCookie(c echo.Context, name string) (*http.Cookie, *APIError) {
+func GetCookie(c echo.Context, name string) (*http.Cookie, *APIError) {
 	cookie, err := c.Cookie(name)
 	if err != nil {
 		switch err {

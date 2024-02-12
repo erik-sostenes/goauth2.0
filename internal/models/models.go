@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -19,28 +20,22 @@ type (
 )
 
 func NewUser(id, name, email, picture string, verifiedEmail bool) (User, error) {
-	var userErr UserError
-
 	if strings.TrimSpace(id) == "" {
-		userErr |= MissingUserID
+		return User{}, fmt.Errorf("%w: user id '%s' is invalid or empty", MissingUserID, id)
 	}
 
 	if strings.TrimSpace(name) == "" {
-		userErr |= MissingUserName
+		return User{}, fmt.Errorf("%w: user name '%s' is invalid or empty", MissingUserName, name)
 	}
 
 	// TODO: validate email
 	if strings.TrimSpace(email) == "" {
-		userErr |= MissingUserEmail
+		return User{}, fmt.Errorf("%w: user email '%s' is invalid or empty", MissingUserEmail, email)
 	}
 
 	// TODO: validate profile url
 	if strings.TrimSpace(picture) == "" {
-		userErr |= MissingUserPicture
-	}
-
-	if userErr > 0 {
-		return User{}, userErr
+		return User{}, fmt.Errorf("%w: user picture '%s' is invalid or empty", MissingUserEmail, picture)
 	}
 
 	return User{
