@@ -3,7 +3,12 @@ package handlers
 
 import "github.com/labstack/echo/v4"
 
-func GoogleRoutes(e *echo.Group, handlers GoogleOAuthHandler, m ...echo.MiddlewareFunc) {
-	e.GET("/login", handlers.Login, m...)
-	e.GET("/callback", handlers.Callback, m...)
+func GoogleRoutes(
+	e *echo.Group,
+	googleLoginOAuthHandler GoogleLoginOAuthHandler,
+	googleCallbackOAuthHandler GoogleCallbackOAuthHandler,
+	m ...echo.MiddlewareFunc,
+) {
+	e.GET("/login", googleLoginOAuthHandler.Login, m...)
+	e.GET("/callback", googleCallbackOAuthHandler.Callback, m...)
 }

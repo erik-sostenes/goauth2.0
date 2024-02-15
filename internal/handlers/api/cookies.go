@@ -2,24 +2,44 @@ package api
 
 import (
 	"encoding/base64"
-	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
-func SetCookie(c echo.Context, cookie *http.Cookie) error {
+type APIError struct {
+	status  int
+	message string
+}
+
+func NewAPIError(status int, message string) *APIError {
+	return &APIError{
+		status:  status,
+		message: message,
+	}
+}
+
+func (e APIError) Error() string {
+	return e.message
+}
+
+func (e APIError) Status() int {
+	return e.status
+}
+
+func SetCookie(c echo.Context, cookie *http.Cookie) (err *APIError) {
 	// encode the cookie value using baser64
 	cookie.Value = base64.URLEncoding.EncodeToString([]byte(cookie.Value))
 
 	// check the length of the cookie
 	if len(cookie.String()) > 4096 {
-		return errors.New("cookie value too long")
+		err = NewAPIError(http.StatusInternalServerError, "coolkie value too long")
+		return
 	}
 
 	c.SetCookie(cookie)
 
-	return nil
+	return
 }
 
 func GetCookie(c echo.Context, name string) (*http.Cookie, *APIError) {

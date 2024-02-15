@@ -35,8 +35,10 @@ func Injector(e *echo.Echo) (err error) {
 	generatorToken := business.NewTokenGenerator(privateKey)
 	exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, generatorToken)
 
-	googleHandler := gh.NewGoogleOAuthHandler(pageProvider, exchanger)
-	gh.GoogleRoutes(group, googleHandler)
+	googleLoginOAuthHandler := gh.NewGoogleLoginOAuthHandler(pageProvider)
+	googleCallbackOAuthHandler := gh.NewGoogleCallbackOAuthHandler(exchanger)
+
+	gh.GoogleRoutes(group, googleLoginOAuthHandler, googleCallbackOAuthHandler)
 
 	return
 }

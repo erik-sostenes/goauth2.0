@@ -13,24 +13,21 @@ import (
 
 const cookieName = "state"
 
-type GoogleOAuthHandler interface {
+type GoogleLoginOAuthHandler interface {
 	Login(echo.Context) error
-	Callback(echo.Context) error
 }
 
-type googleOAuthHandler struct {
-	provider  business.PageProvider
-	exchanger business.Exchanger
+type googleLoginOAuthHandler struct {
+	provider business.PageProvider
 }
 
-func NewGoogleOAuthHandler(provider business.PageProvider, exchanger business.Exchanger) GoogleOAuthHandler {
-	return &googleOAuthHandler{
-		provider:  provider,
-		exchanger: exchanger,
+func NewGoogleLoginOAuthHandler(provider business.PageProvider) GoogleLoginOAuthHandler {
+	return &googleLoginOAuthHandler{
+		provider: provider,
 	}
 }
 
-func (g *googleOAuthHandler) Login(c echo.Context) error {
+func (g *googleLoginOAuthHandler) Login(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	page, state, err := g.provider.ProvidePage(ctx)
@@ -45,15 +42,29 @@ func (g *googleOAuthHandler) Login(c echo.Context) error {
 		HttpOnly: true,
 	}
 
-	err = api.SetCookie(c, cookie)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	apierr := api.SetCookie(c, cookie)
+	if apierr != nil {
+		return echo.NewHTTPError(apierr.Status(), apierr.Error())
 	}
 
 	return c.HTML(http.StatusOK, page.String())
 }
 
-func (g *googleOAuthHandler) Callback(c echo.Context) error {
+type GoogleCallbackOAuthHandler interface {
+	Callback(echo.Context) error
+}
+
+type googleCallbackOAuthHandler struct {
+	exchanger business.Exchanger
+}
+
+func NewGoogleCallbackOAuthHandler(exchanger business.Exchanger) GoogleCallbackOAuthHandler {
+	return &googleCallbackOAuthHandler{
+		exchanger: exchanger,
+	}
+}
+
+func (g *googleCallbackOAuthHandler) Callback(c echo.Context) error {
 	ctx := c.Request().Context()
 	state := c.QueryParam(cookieName)
 
@@ -86,7 +97,6 @@ func (g *googleOAuthHandler) Callback(c echo.Context) error {
 
 	params := url.Values{}
 	params.Set("params:Authorization:Bearer", token)
-
 	path.RawQuery = params.Encode()
 
 	return c.Redirect(http.StatusPermanentRedirect, path.String())
