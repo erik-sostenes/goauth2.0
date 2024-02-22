@@ -27,9 +27,15 @@ func (e APIError) Status() int {
 	return e.status
 }
 
-func SetCookie(c echo.Context, cookie *http.Cookie) (err *APIError) {
+func ConfigCookie(cookie *http.Cookie) *http.Cookie {
 	// encode the cookie value using baser64
 	cookie.Value = base64.URLEncoding.EncodeToString([]byte(cookie.Value))
+
+	return cookie
+}
+
+func SetCookie(c echo.Context, cookie *http.Cookie) (err *APIError) {
+	ConfigCookie(cookie)
 
 	// check the length of the cookie
 	if len(cookie.String()) > 4096 {

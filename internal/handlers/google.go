@@ -99,5 +99,5 @@ func (g *googleCallbackOAuthHandler) Callback(c echo.Context) error {
 	params.Set("params:Authorization:Bearer", token)
 	path.RawQuery = params.Encode()
 
-	return c.Redirect(http.StatusPermanentRedirect, path.String())
+	return c.Redirect(http.StatusSeeOther, path.String())
 }

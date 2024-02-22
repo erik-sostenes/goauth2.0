@@ -57,3 +57,19 @@ func (userInfoAsker) AskUserInfo(ctx context.Context, token models.Token) (user 
 		userResponse.VerifiedEmail,
 	)
 }
+
+type userInfoAskerMock struct{}
+
+func NewUserInfoAskerMock() UserInfoAsker {
+	return &userInfoAskerMock{}
+}
+
+func (userInfoAskerMock) AskUserInfo(ctx context.Context, token models.Token) (user models.User, err error) {
+	return models.NewUser(
+		"1",
+		"Erik Sostenes Simon",
+		"eriksostenessimon@gmail.com",
+		"https://eriksostenessimon.com",
+		true,
+	)
+}
