@@ -20,15 +20,14 @@ func ErrorHandler(handler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
 
 			if errors.As(err, &asUserError) {
 				switch asUserError {
-				case models.DuplicateUser:
-					_ = c.JSON(http.StatusBadRequest, message)
 				case models.MissingUserID,
 					models.MissingUserName,
 					models.MissingUserEmail,
-					models.MissingUserPicture:
+					models.MissingUserPicture,
+					models.UserNotFound:
 					_ = c.JSON(http.StatusBadRequest, message)
 				default:
-					handler(err, c)
+					_ = c.JSON(http.StatusInternalServerError, message)
 				}
 			}
 		}
@@ -46,11 +45,26 @@ func ErrorHandler(handler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
 				case models.ErrDuringCodeExchanger:
 					_ = c.JSON(http.StatusUnauthorized, message)
 				default:
-					handler(err, c)
+					_ = c.JSON(http.StatusInternalServerError, message)
 				}
 			}
 		}
 
-		handler(err, c)
+		asApiError := APIError(0)
+
+		if errors.As(err, &asApiError) {
+			message := echo.Map{
+				"code":    asApiError.Error(),
+				"message": err.Error(),
+			}
+			switch asApiError {
+			case ExpiredCookie:
+				_ = c.JSON(http.StatusBadRequest, message)
+			case InvalidState:
+				_ = c.JSON(http.StatusUnauthorized, message)
+			case InvalidCookie, ErrAuthentication:
+				_ = c.JSON(http.StatusInternalServerError, message)
+			}
+		}
 	}
 }

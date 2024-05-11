@@ -2,29 +2,24 @@ package api
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
 
-type APIError struct {
-	status  int
-	message string
-}
+const (
+	InvalidCookie APIError = 1 << iota
+	InvalidState
+	ExpiredCookie
+	ErrAuthentication
+)
 
-func NewAPIError(status int, message string) *APIError {
-	return &APIError{
-		status:  status,
-		message: message,
-	}
-}
+type APIError uint16
 
 func (e APIError) Error() string {
-	return e.message
-}
-
-func (e APIError) Status() int {
-	return e.status
+	return fmt.Sprintf("Api Error '%s'", strconv.FormatUint(uint64(e), 10))
 }
 
 func ConfigCookie(cookie *http.Cookie) *http.Cookie {
@@ -34,13 +29,12 @@ func ConfigCookie(cookie *http.Cookie) *http.Cookie {
 	return cookie
 }
 
-func SetCookie(c echo.Context, cookie *http.Cookie) (err *APIError) {
+func SetCookie(c echo.Context, cookie *http.Cookie) (err error) {
 	ConfigCookie(cookie)
 
 	// check the length of the cookie
 	if len(cookie.String()) > 4096 {
-		err = NewAPIError(http.StatusInternalServerError, "coolkie value too long")
-		return
+		return fmt.Errorf("%w: coolkie value too long", InvalidCookie)
 	}
 
 	c.SetCookie(cookie)
@@ -48,14 +42,14 @@ func SetCookie(c echo.Context, cookie *http.Cookie) (err *APIError) {
 	return
 }
 
-func GetCookie(c echo.Context, name string) (*http.Cookie, *APIError) {
+func GetCookie(c echo.Context, name string) (*http.Cookie, error) {
 	cookie, err := c.Cookie(name)
 	if err != nil {
 		switch err {
 		case http.ErrNoCookie:
-			return nil, NewAPIError(http.StatusBadRequest, "the waiting time for authentication has expired")
+			return nil, fmt.Errorf("%w: the waiting time for authentication has expired", ExpiredCookie)
 		default:
-			return nil, NewAPIError(http.StatusInternalServerError, "an error ocurred while authenticating")
+			return nil, fmt.Errorf("%w: an error ocurred while authenticating", ErrAuthentication)
 		}
 	}
 

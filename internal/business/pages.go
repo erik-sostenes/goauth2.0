@@ -16,6 +16,14 @@ type PageProvider interface {
 }
 
 func NewPageProvider(oauthConfig *oauth2.Config, drawer repository.PageDrawer[repository.TemplateProvider]) PageProvider {
+	if oauthConfig == nil {
+		panic("missing oauthConfig dependency")
+	}
+
+	if drawer == nil {
+		panic("missing drawer dependency")
+	}
+
 	return &pageProvider{
 		oauthConfig: oauthConfig,
 		drawer:      drawer,

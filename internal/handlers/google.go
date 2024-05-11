@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -44,7 +45,7 @@ func (g *googleLoginOAuthHandler) Login(c echo.Context) error {
 
 	apierr := api.SetCookie(c, cookie)
 	if apierr != nil {
-		return echo.NewHTTPError(apierr.Status(), apierr.Error())
+		return apierr
 	}
 
 	return c.HTML(http.StatusOK, page.String())
@@ -70,7 +71,7 @@ func (g *googleCallbackOAuthHandler) Callback(c echo.Context) error {
 
 	cookie, apierr := api.GetCookie(c, cookieName)
 	if apierr != nil {
-		return echo.NewHTTPError(apierr.Status(), apierr.Error())
+		return apierr
 	}
 
 	value, err := base64.URLEncoding.DecodeString(cookie.Value)
@@ -79,7 +80,7 @@ func (g *googleCallbackOAuthHandler) Callback(c echo.Context) error {
 	}
 
 	if state != string(value) {
-		return echo.NewHTTPError(http.StatusUnauthorized)
+		return fmt.Errorf("%w", api.InvalidState)
 	}
 
 	code := c.QueryParam("code")
@@ -88,7 +89,6 @@ func (g *googleCallbackOAuthHandler) Callback(c echo.Context) error {
 		return err
 	}
 
-	// TODO: redirect url
 	const redirectUrl = "https://www.google.com/"
 	path, err := url.Parse(redirectUrl)
 	if err != nil {

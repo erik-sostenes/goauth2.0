@@ -11,7 +11,7 @@ import (
 )
 
 type UserInfoAsker interface {
-	AskUserInfo(context.Context, models.Token) (models.User, error)
+	AskUserInfo(context.Context, models.Token) (*models.User, error)
 }
 
 type userInfoAsker struct{}
@@ -20,16 +20,13 @@ func NewUserInfoAsker() UserInfoAsker {
 	return &userInfoAsker{}
 }
 
-func (userInfoAsker) AskUserInfo(ctx context.Context, token models.Token) (user models.User, err error) {
+func (userInfoAsker) AskUserInfo(ctx context.Context, token models.Token) (user *models.User, err error) {
 	const endpoint = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return
 	}
-
-	// Setting request context
-	request = request.WithContext(ctx)
 
 	// Setting query params
 	params := url.Values{}
@@ -55,21 +52,5 @@ func (userInfoAsker) AskUserInfo(ctx context.Context, token models.Token) (user 
 		userResponse.Email,
 		userResponse.Picture,
 		userResponse.VerifiedEmail,
-	)
-}
-
-type userInfoAskerMock struct{}
-
-func NewUserInfoAskerMock() UserInfoAsker {
-	return &userInfoAskerMock{}
-}
-
-func (userInfoAskerMock) AskUserInfo(ctx context.Context, token models.Token) (user models.User, err error) {
-	return models.NewUser(
-		"1",
-		"Erik Sostenes Simon",
-		"eriksostenessimon@gmail.com",
-		"https://eriksostenessimon.com",
-		true,
 	)
 }

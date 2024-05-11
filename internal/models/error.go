@@ -9,7 +9,7 @@ const (
 	MissingUserName
 	MissingUserEmail
 	MissingUserPicture
-	DuplicateUser
+	UserNotFound
 )
 
 type UserError uint16

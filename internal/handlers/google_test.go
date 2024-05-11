@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,8 @@ import (
 	"github.com/erik-sostenes/auth-api/internal/handlers/api"
 	"github.com/erik-sostenes/auth-api/internal/models"
 	"github.com/erik-sostenes/auth-api/internal/repository"
-	"github.com/erik-sostenes/auth-api/internal/repository/persistence"
+	"github.com/erik-sostenes/auth-api/internal/repository/memory"
+	"github.com/erik-sostenes/auth-api/pkg"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -97,15 +99,15 @@ func TestHttpHandler_GoogleCallback(t *testing.T) {
 			googleCallback: func() GoogleCallbackOAuthHandler {
 				codeExchanger := repository.NewCodeExchanger(oauthConfig)
 
-				set := persistence.NewSet[string, *models.User]()
-				userSaver := persistence.NewUserSaver(&set)
+				set := pkg.NewSet[string, *models.User]()
+				userMemory := memory.NewUserMemory(&set)
 
 				userInfoAsker := repository.NewUserInfoAsker()
 
 				privateKey := os.Getenv("PRIVATE_KEY")
 				tokenGenerator := business.NewTokenGenerator(privateKey)
 
-				exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, tokenGenerator)
+				exchanger := business.NewExchanger(codeExchanger, userMemory, userMemory, userInfoAsker, tokenGenerator)
 				return NewGoogleCallbackOAuthHandler(exchanger)
 			}(),
 			request:            httptest.NewRequest(http.MethodGet, "/api/v1/goauth/auth/callback", http.NoBody),
@@ -115,15 +117,15 @@ func TestHttpHandler_GoogleCallback(t *testing.T) {
 			googleCallback: func() GoogleCallbackOAuthHandler {
 				codeExchanger := repository.NewCodeExchanger(oauthConfig)
 
-				set := persistence.NewSet[string, *models.User]()
-				userSaver := persistence.NewUserSaver(&set)
+				set := pkg.NewSet[string, *models.User]()
+				userMemory := memory.NewUserMemory(&set)
 
 				userInfoAsker := repository.NewUserInfoAsker()
 
 				privateKey := os.Getenv("PRIVATE_KEY")
 				tokenGenerator := business.NewTokenGenerator(privateKey)
 
-				exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, tokenGenerator)
+				exchanger := business.NewExchanger(codeExchanger, userMemory, userMemory, userInfoAsker, tokenGenerator)
 				return NewGoogleCallbackOAuthHandler(exchanger)
 			}(),
 			request: httptest.NewRequest(http.MethodGet, "/api/v1/goauth/auth/callback", http.NoBody),
@@ -139,15 +141,15 @@ func TestHttpHandler_GoogleCallback(t *testing.T) {
 			googleCallback: func() GoogleCallbackOAuthHandler {
 				codeExchanger := repository.NewCodeExchanger(oauthConfig)
 
-				set := persistence.NewSet[string, *models.User]()
-				userSaver := persistence.NewUserSaver(&set)
+				set := pkg.NewSet[string, *models.User]()
+				userMemory := memory.NewUserMemory(&set)
 
 				userInfoAsker := repository.NewUserInfoAsker()
 
 				privateKey := os.Getenv("PRIVATE_KEY")
 				tokenGenerator := business.NewTokenGenerator(privateKey)
 
-				exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, tokenGenerator)
+				exchanger := business.NewExchanger(codeExchanger, userMemory, userMemory, userInfoAsker, tokenGenerator)
 				return NewGoogleCallbackOAuthHandler(exchanger)
 			}(),
 			request: httptest.NewRequest(http.MethodGet, "/api/v1/goauth/auth/callback?state=012-345-6789", http.NoBody),
@@ -161,17 +163,17 @@ func TestHttpHandler_GoogleCallback(t *testing.T) {
 		},
 		"given a successful authentication, a StatusSeeOther status code was expected": {
 			googleCallback: func() GoogleCallbackOAuthHandler {
-				codeExchangerMock := repository.NewCodeExchangerMock(oauthConfig)
+				codeExchanger := NewCodeExchangerMock(oauthConfig)
 
-				set := persistence.NewSet[string, *models.User]()
-				userSaver := persistence.NewUserSaver(&set)
+				set := pkg.NewSet[string, *models.User]()
+				userMemory := memory.NewUserMemory(&set)
 
-				userInfoAskerMock := repository.NewUserInfoAskerMock()
+				userInfoAsker := NewUserInfoAskerMock()
 
 				privateKey := os.Getenv("PRIVATE_KEY")
 				tokenGenerator := business.NewTokenGenerator(privateKey)
 
-				exchanger := business.NewExchanger(codeExchangerMock, userSaver, userInfoAskerMock, tokenGenerator)
+				exchanger := business.NewExchanger(codeExchanger, userMemory, userMemory, userInfoAsker, tokenGenerator)
 				return NewGoogleCallbackOAuthHandler(exchanger)
 			}(),
 			request: httptest.NewRequest(http.MethodGet, "/api/v1/goauth/auth/callback?state=012-345-6789&code=4/0AeaYSHA496Vz", http.NoBody),
@@ -208,4 +210,34 @@ func TestHttpHandler_GoogleCallback(t *testing.T) {
 			}
 		})
 	}
+}
+
+type codeExchangerMock struct {
+	config *oauth2.Config
+}
+
+func NewCodeExchangerMock(config *oauth2.Config) *codeExchangerMock {
+	return &codeExchangerMock{
+		config: config,
+	}
+}
+
+func (c *codeExchangerMock) ExchangeCode(ctx context.Context, code string) (models.Token, error) {
+	return &oauth2.Token{}, nil
+}
+
+type userInfoAskerMock struct{}
+
+func NewUserInfoAskerMock() *userInfoAskerMock {
+	return &userInfoAskerMock{}
+}
+
+func (userInfoAskerMock) AskUserInfo(ctx context.Context, token models.Token) (user *models.User, err error) {
+	return models.NewUser(
+		"1",
+		"Erik Sostenes Simon",
+		"eriksostenessimon@gmail.com",
+		"https://eriksostenessimon.com",
+		true,
+	)
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/erik-sostenes/auth-api/internal/business"
 	gh "github.com/erik-sostenes/auth-api/internal/handlers"
 	"github.com/erik-sostenes/auth-api/internal/handlers/api"
-	"github.com/erik-sostenes/auth-api/internal/models"
 	"github.com/erik-sostenes/auth-api/internal/repository"
 	"github.com/erik-sostenes/auth-api/internal/repository/persistence"
 
@@ -17,7 +16,9 @@ import (
 )
 
 func Injector(e *echo.Echo) (err error) {
+	tableName := os.Getenv("TABLE_NAME")
 	privateKey := os.Getenv("PRIVATE_KEY")
+
 	group := e.Group("/api/v1/goauth/auth")
 
 	e.HTTPErrorHandler = api.ErrorHandler(e.DefaultHTTPErrorHandler)
@@ -27,13 +28,14 @@ func Injector(e *echo.Echo) (err error) {
 	pageDrawer := repository.NewPageDrawer()
 	pageProvider := business.NewPageProvider(oauth, pageDrawer)
 
-	set := persistence.NewSet[string, *models.User]()
+	dynamoDBClient := persistence.DynamoDbClient()
 
 	codeExchanger := repository.NewCodeExchanger(oauth)
+	dynamodbUserGetter := persistence.NewDynamoDBUserGetter(tableName, dynamoDBClient)
+	dynamodbUserSaver := persistence.NewDynamoDBUserSaver(tableName, dynamoDBClient)
 	userInfoAsker := repository.NewUserInfoAsker()
-	userSaver := persistence.NewUserSaver(&set)
 	generatorToken := business.NewTokenGenerator(privateKey)
-	exchanger := business.NewExchanger(codeExchanger, userSaver, userInfoAsker, generatorToken)
+	exchanger := business.NewExchanger(codeExchanger, dynamodbUserGetter, dynamodbUserSaver, userInfoAsker, generatorToken)
 
 	googleLoginOAuthHandler := gh.NewGoogleLoginOAuthHandler(pageProvider)
 	googleCallbackOAuthHandler := gh.NewGoogleCallbackOAuthHandler(exchanger)

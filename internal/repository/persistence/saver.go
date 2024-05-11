@@ -2,8 +2,10 @@ package persistence
 
 import (
 	"context"
-	"fmt"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/erik-sostenes/auth-api/internal/models"
 )
 
@@ -11,23 +13,49 @@ type UserSaver interface {
 	Save(context.Context, *models.User) error
 }
 
-type userSaver struct {
-	// TODO: change value of primitive string by VO(models.UserId)
-	*Set[string, *models.User]
+type dynamoDBUserSaver struct {
+	DynamoDB  *dynamodb.DynamoDB
+	tableName string
 }
 
-func NewUserSaver(set *Set[string, *models.User]) UserSaver {
-	return &userSaver{
-		Set: set,
+func NewDynamoDBUserSaver(tableName string, dynamoDB *dynamodb.DynamoDB) UserSaver {
+	if strings.TrimSpace(tableName) == "" {
+		panic("table name is missing")
+	}
+
+	if dynamoDB == nil {
+		panic("dynamoDB dependence is missing")
+	}
+
+	return &dynamoDBUserSaver{
+		DynamoDB:  dynamoDB,
+		tableName: tableName,
 	}
 }
 
-func (u *userSaver) Save(ctx context.Context, user *models.User) error {
-	if exists := u.Set.Exist(user.ID()); exists {
-		return fmt.Errorf("%w: user with id '%s' already exists", models.DuplicateUser, user.ID())
+func (u *dynamoDBUserSaver) Save(ctx context.Context, user *models.User) error {
+	userDTO := &UserDTO{
+		Id:            user.ID(),
+		Name:          user.Name(),
+		Email:         user.Email(),
+		Picture:       user.Picture(),
+		VerifiedEmail: user.VerifiedEmail(),
 	}
 
-	u.Set.Add(user.ID(), user)
+	userItem, err := dynamodbattribute.MarshalMap(userDTO)
+	if err != nil {
+		return err
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      userItem,
+		TableName: &u.tableName,
+	}
+
+	_, err = u.DynamoDB.PutItemWithContext(ctx, input)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

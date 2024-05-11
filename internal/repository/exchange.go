@@ -20,6 +20,10 @@ type codeExchanger struct {
 }
 
 func NewCodeExchanger(config *oauth2.Config) CodeExchanger {
+	if config == nil {
+		panic("missing config oauth2 dependency")
+	}
+
 	return &codeExchanger{
 		config: config,
 	}
@@ -32,18 +36,4 @@ func (c codeExchanger) ExchangeCode(ctx context.Context, code string) (models.To
 	}
 
 	return token, err
-}
-
-type codeExchangerMock struct {
-	config *oauth2.Config
-}
-
-func NewCodeExchangerMock(config *oauth2.Config) CodeExchanger {
-	return &codeExchangerMock{
-		config: config,
-	}
-}
-
-func (c *codeExchangerMock) ExchangeCode(ctx context.Context, code string) (models.Token, error) {
-	return &oauth2.Token{}, nil
 }

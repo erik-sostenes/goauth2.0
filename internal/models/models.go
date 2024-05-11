@@ -19,26 +19,26 @@ type (
 	}
 )
 
-func NewUser(id, name, email, picture string, verifiedEmail bool) (User, error) {
+func NewUser(id, name, email, picture string, verifiedEmail bool) (*User, error) {
 	if strings.TrimSpace(id) == "" {
-		return User{}, fmt.Errorf("%w: user id '%s' is invalid or empty", MissingUserID, id)
+		return &User{}, fmt.Errorf("%w: user id '%s' is invalid or empty", MissingUserID, id)
 	}
 
 	if strings.TrimSpace(name) == "" {
-		return User{}, fmt.Errorf("%w: user name '%s' is invalid or empty", MissingUserName, name)
+		return &User{}, fmt.Errorf("%w: user name '%s' is invalid or empty", MissingUserName, name)
 	}
 
 	// TODO: validate email
 	if strings.TrimSpace(email) == "" {
-		return User{}, fmt.Errorf("%w: user email '%s' is invalid or empty", MissingUserEmail, email)
+		return &User{}, fmt.Errorf("%w: user email '%s' is invalid or empty", MissingUserEmail, email)
 	}
 
 	// TODO: validate profile url
 	if strings.TrimSpace(picture) == "" {
-		return User{}, fmt.Errorf("%w: user picture '%s' is invalid or empty", MissingUserEmail, picture)
+		return &User{}, fmt.Errorf("%w: user picture '%s' is invalid or empty", MissingUserEmail, picture)
 	}
 
-	return User{
+	return &User{
 		id:            id,
 		name:          name,
 		email:         email,

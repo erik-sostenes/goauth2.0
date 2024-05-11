@@ -1,3 +1,6 @@
+migrations:
+	bash ./scripts/migrations.bash
+
 keys: 
 	bash ./scripts/keys.bash
 
